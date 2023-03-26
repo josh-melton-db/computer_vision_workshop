@@ -14,11 +14,16 @@ if 'config' not in locals():
 
 # COMMAND ----------
 
+# user = spark.sql('select current_user() as user').collect()[0]['user']
+user = 'jlm'
+
+# COMMAND ----------
+
 # DBTITLE 1,Storage Settings
+config['incoming_image_file_path'] = config['mount_point'] + '/FileStore/computer_vision_workshop_' + user
 config['mount_point'] = '/tmp/cv_foundations/' # location for data files; use a mount path like /mnt/images/ if reading from external storage
 config['database_root'] = '/tmp/cv_foundations/cv/'
 config['raw_image_file_path'] = "s3://db-gtm-industry-solutions/data/rcg/cv/images/"  # where incoming image files land - this is a publicly accessible S3 bucket
-config['incoming_image_file_path'] = config['mount_point'] + 'tmp/incoming_image_file_path/'
 config['checkpoint_path'] = config['mount_point'] + 'tmp/image_processing_chkpnt/' # folder where incoming image processing checkpoint resides
 config['checkpoint_path_inference'] = config['mount_point'] + 'tmp/image_inference_chkpnt/'
 config['checkpoint_path_inference_73'] = config['mount_point'] + 'tmp/image_inference_chkpnt_73/'
@@ -33,7 +38,7 @@ config['scored_images_table'] = "cv.scored_images"
 config['tuning_model_name'] = 'cv pytorch tuning'
 config['tuned_model_name'] = 'cv pytorch tuned'
 config['tuned_model_name_73'] = 'cv pytorch tuned 73'
-config['final_model_name'] = 'cv pytorch final'
+config['final_model_name'] = 'cv pytorch final ' + user
 
 # COMMAND ----------
 

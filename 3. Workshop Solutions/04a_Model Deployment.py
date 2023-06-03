@@ -257,7 +257,7 @@ max_bytes_per_executor = 512 * 1024**2 # 512-MB limit
   .option('cloudFiles.includeExistingFiles', 'true') 
   .option('pathGlobFilter', '*.jpg') 
   .option('cloudFiles.maxBytesPerTrigger', sc.defaultParallelism * max_bytes_per_executor) 
-  .load('dbfs:/tmp/cv_foundations/tmp/incoming_image_file_path') # location to read from
+  .load('dbfs:/FileStore/tables/images') # location to read from
   .withColumn('score', cv_func(f.struct(f.col('content'))))  # score images
   .select('path','score')
   .writeStream
@@ -275,7 +275,7 @@ display(spark.table(config['scored_images_table']))
 
 # MAGIC %md ## Step 3: Databricks Model Serving Deployment
 # MAGIC
-# MAGIC If our needs required us to deploy a centralized service that any number of applications could call on-demand, we might consider a different deployment path for our model.  Instead of deploying the model to a function, we might deploy it to a Docker image and expose it through a REST API.  Integration between mlflow and [Azure ML](https://www.mlflow.org/docs/latest/python_api/mlflow.azureml.html) and [AWS Sagemaker](https://www.mlflow.org/docs/latest/python_api/mlflow.sagemaker.html) make this a relatively simple process.  We might also take advantage of Databricks's [model serving](https://docs.databricks.com/applications/mlflow/model-serving.html?_ga=2.81483735.1331949122.1632064157-31266672.1629894740) capabilities.
+# MAGIC If our needs required us to deploy a centralized service that any number of applications could call on-demand, we might consider a different deployment path for our model.  Instead of deploying the model to a function, we might deploy it to a Docker image and expose it through a REST API.  Integration between mlflow and [Azure ML](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-use-mlflow-cli-runs?view=azureml-api-2&tabs=interactive%2Ccli) and [AWS Sagemaker](https://www.mlflow.org/docs/latest/python_api/mlflow.sagemaker.html) make this a relatively simple process.  We might also take advantage of Databricks's [model serving](https://docs.databricks.com/applications/mlflow/model-serving.html?_ga=2.81483735.1331949122.1632064157-31266672.1629894740) capabilities.
 # MAGIC
 # MAGIC To leverage Databricks model serving, we will need to make use of our workspace's user-interface.  To do this, switch into the Databricks UI's **Machine Learning UI** by clicking the drop-down in the left-hand panel of the Databricks UI. Once in the Machine Learning UI, click the **Models** icon in the left-hand side of the screen.
 # MAGIC
@@ -285,13 +285,8 @@ display(spark.table(config['scored_images_table']))
 
 # COMMAND ----------
 
-# DBTITLE 1,Get Model URL
-workspace_url = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None) 
-model_url = f"{workspace_url}/model/{config['final_model_name']}/Production/invocations"
-
-# COMMAND ----------
-
-# MAGIC %md Finally, the REST API presented by Databricks Model Serving is secured using a [Databricks Personal Access Token](https://docs.databricks.com/dev-tools/api/latest/authentication.html).
+# DBTITLE 1,Follow the instructions above and copy/paste the model URL into the following cell
+model_url = "https://dbc-cf66433a-3ecf.cloud.databricks.com/serving-endpoints/odl_instructor_635258/invocations"
 
 # COMMAND ----------
 
@@ -336,9 +331,20 @@ images
 
 # COMMAND ----------
 
+import os
+import requests
+import numpy as np
+import pandas as pd
+import json
+
+def create_tf_serving_json(data):
+    return {'inputs': {name: data[name].tolist() for name in data.keys()} if isinstance(data, dict) else data}
+
+# COMMAND ----------
+
 # DBTITLE 1,Export Pandas DataFrame to JSON
-data_json = images.to_dict(orient='records')
-data_json
+data = images.to_dict(orient='records')
+data_json = {"dataframe_records": data}
 
 # COMMAND ----------
 
@@ -346,28 +352,22 @@ data_json
 
 # COMMAND ----------
 
-model_url
-
-# COMMAND ----------
-
 # DBTITLE 1,Call REST API to Score Images
 import time
 if save_to_registry:
-  time.sleep(600) # wait for new version to finish deployment
-
   # send data to REST API for scoring
   headers = {'Authorization': 'Bearer {0}'.format(personal_access_token)}
   response = requests.request(method='POST', headers=headers, url=model_url, json=data_json) # request is expected to work only after model serving is enabled
   
-  # if response.status_code != 200:
-  #   raise Exception(f'Request failed with status {response.status_code}, {response.text}')
+  if response.status_code != 200:
+    raise Exception(f'Request failed with status {response.status_code}, {response.text}')
 
   # display returned scores
-  # print(response.json())
+  print(response.json())
 
 # COMMAND ----------
 
-# MAGIC %md The code above is not intended to demonstrate a production-quality deployment to an edge device.  Instead, it's focused on the core mechanics of using the model locally in a manner that provides maximum flexibility.  Other deployment paths including the retrieval of Docker images from the mlflow repository may provide better suited for some scenarios.
+# MAGIC %md Other deployment paths, including the retrieval of Docker images from MLflow, may provide better suited for some scenarios. See the [Edge ML Solution Accelerator](https://github.com/databricks-industry-solutions/edge-ml-for-manufacturing) for more guidance on edge deployments
 
 # COMMAND ----------
 

@@ -404,61 +404,23 @@ loss, acc = train_and_evaluate(**{'lr':0.01, 'momentum':0.9})
 
 # MAGIC %md ##Step 3: Perform Hyperparameter Tuning
 # MAGIC
-# MAGIC Now that we've demonstrated our ability to train the model, let's focus on hyperparameter tuning.  Our model, like most models, have a number of parameters that control its behavior during training.  The setting of these parameters is challenging in that there are a wide range of potential values for each parameter and complex interactions between variables when applied against a given data set.   
+# MAGIC Now that we've demonstrated our ability to train the model, we would focus on hyperparameter tuning.  Our model, like most models, has a number of parameters that control its behavior during training.  The setting of these parameters is challenging in that there are a wide range of potential values for each parameter and complex interactions between variables when applied against a given data set.   
 # MAGIC
 # MAGIC <img src='https://brysmiwasb.blob.core.windows.net/demos/images/cv_hyperopt.png' width=500>
 # MAGIC
-# MAGIC A common way of dealing with this complexity is to train a series of models using different hyperparameter values to determine which combinations produce the best results. Using [Hyperopt](https://docs.databricks.com/applications/machine-learning/automl-hyperparam-tuning/index.html#hyperparameter-tuning-with-hyperopt), we can intelligently navigate a range of hyperparameter values to efficiently arrive at an optimal configuration.  This often requires us to train hundreds or even thousands of models to discover an optimum. Leveraging the *SparkTrials* feature, we can tackle these training iterations across the resources provided by our cluster, allowing us to shorten the time for this work based on the number of resources we wish to provision:
+# MAGIC A common way of dealing with this complexity is to train a series of models using different hyperparameter values to determine which combinations produce the best results. Using [Hyperopt](https://docs.databricks.com/applications/machine-learning/automl-hyperparam-tuning/index.html#hyperparameter-tuning-with-hyperopt), we can intelligently navigate a range of hyperparameter values to efficiently arrive at an optimal configuration.  This often requires us to train hundreds or even thousands of models to discover an optimum. Leveraging the *SparkTrials* feature, we can tackle these training iterations across the resources provided by our cluster, allowing us to shorten the time for this work based on the number of resources we wish to provision.
+# MAGIC
+# MAGIC > For the purposes of this demo, we'll skip hyperparameter tuning and set the hyperparameters to the results of a previous Hyperopt run
 
 # COMMAND ----------
 
-# DBTITLE 1,Perform Hyperparameter Tuning with Hyperopt
-# define hyperparameter search space
-search_space = {
-    'lr': hp.loguniform('lr', -10, -4),
-    'momentum': hp.loguniform('momentum', -10, 0)
-    }
-
-
-# define training function to return results as expected by hyperopt
-def train_fn(params):
-  
-  # train model against a provided set of hyperparameter values
-  loss, acc = train_and_evaluate(**params)
-  
-  # log this iteration to mlflow for greater transparency
-  mlflow.log_metric('accuracy', acc)
-  
-  # return results from this iteration
-  return {'loss': loss, 'status': STATUS_OK}
-
-
-# determine degree of parallelism to employ
-if torch.cuda.is_available(): # is gpu
-  parallelism = int(sc.getConf().get('spark.databricks.clusterUsageTags.clusterWorkers'))
-else: # is cpu
-  parallelism = sc.defaultParallelism
-
-# perform distributed hyperparameter tuning
-with mlflow.start_run(run_name=config['tuning_model_name']) as run:
-  
-  argmin = fmin(
-    fn=train_fn,
-    space=search_space,
-    algo=tpe.suggest,
-    max_evals=10, # total number of hyperparameter runs (this would typically be much higher)
-    trials=SparkTrials(parallelism=parallelism)) # number of hyperparameter runs to run in parallel
-  
+# DBTITLE 1,Set Optimized Hyperparameter Values
+# For the sake of time, we'll skip Hyperopt and set reasonable hyperparameters
+argmin = {'lr': 0.006062565580713635, 'momentum': 0.005561741337397649}
 
 # COMMAND ----------
 
-# DBTITLE 1,Display Optimized Hyperparameter Values
-# See optimized hyperparameters
-argmin
-
-# COMMAND ----------
-
-# MAGIC %md Please note in the hyperparameter run, we leveraged [mlflow](https://mlflow.org/), another technology pre-integrated with the Databricks ML runtime, to capture various metrics for our runs.  With hyperopt, tracking is automatic but by explicitly calling to mlflow, we can log additional metrics such as accuracy to help us explore hyperparameter tuning.
+# MAGIC %md Please note in the hyperparameter run, we would leverage [mlflow](https://mlflow.org/), another technology pre-integrated with the Databricks ML runtime, to capture various metrics for our runs.  With hyperopt, tracking is automatic but by explicitly calling to mlflow, we can log additional metrics such as accuracy to help us explore hyperparameter tuning.
 # MAGIC
 # MAGIC With access to these data, we can use the mlflow [experiment interface](https://docs.databricks.com/applications/mlflow/tracking.html) and explore how various hyperparameters impact model metrics:</p>
 # MAGIC

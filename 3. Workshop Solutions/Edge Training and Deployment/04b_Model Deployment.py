@@ -9,11 +9,11 @@
 # COMMAND ----------
 
 # MAGIC %md ## Introduction
-# MAGIC 
+# MAGIC
 # MAGIC In notebook 04a and 04b, we explore three different deployment vehicles:</p>
-# MAGIC 
+# MAGIC
 # MAGIC <img src='https://brysmiwasb.blob.core.windows.net/demos/images/cv_deploy4.png' width=550>
-# MAGIC 
+# MAGIC
 # MAGIC Each deployment path is facilitated by mlflow, a model management technology integrated with the Databricks workspace.  For the edge device deployment, you need to ensure the training environment is aligned with the Python version supported by the device and that you do not use any mlflow functionality, such as the model registry, that may impose updated requirements for the device.  For our Raspberry Pi device, which supports Python 3.7, we will make use of the Databricks 7.3 ML LTS runtime and avoid using the mlflow registry which *pickles* model components using pickle libraries aligned with latest versions of Python.
 
 # COMMAND ----------
@@ -50,11 +50,11 @@ import base64
 # COMMAND ----------
 
 # MAGIC %md ## Step 1: Persist Model with Transformation Logic
-# MAGIC 
+# MAGIC
 # MAGIC Having successfully trained our model, we can persist it in preparation for deployment.  If you examine the last cell of the last step of the last notebook, you'll see we actually did this when we called the mlflow *log_model* method.  However, that version of the model doesn't include the logic required to transform a raw image into the format expected by our trained model.  So, we'll take a moment here to write a wrapper for our model which tackles all the data transformations originally captured in our transform spec.  To clarify, we could have (and *should* have) defined this wrapper in the last notebook and logged the model to the mlflow register at that time.  However, we elected to tackle this here as part of our focus on deployment.
-# MAGIC 
+# MAGIC
 # MAGIC The custom wrapper for our model defines logic for two key methods: *\_\_init\_\_* and *predict*.  The *\_\_init\_\_* method defines the logic employed as the model is initialized.  It's here that we will flip our model into its evaluation mode and define the logic for data transformation.  The *predict* method receives input data, applies the transformations and returns scored output.  
-# MAGIC 
+# MAGIC
 # MAGIC The Spark user-defined function associated with our ETL deployment pattern passes data to the *predict* function as a pandas dataframe. To keep things simple, we'll package our image data in a similar manner before passing it to the model for scoring.  However, we could have included logic in our predict function to inspect the incoming data and respond to different data structures and formats:
 
 # COMMAND ----------
@@ -182,9 +182,9 @@ if not save_to_registry:
 # COMMAND ----------
 
 # MAGIC %md ## Step 2: ETL Deployment
-# MAGIC 
+# MAGIC
 # MAGIC Registered models may be deployed in a number of ways.  If our goal is to score images as they are received, we might retrieve our model to a Spark user-defined function:
-# MAGIC 
+# MAGIC
 # MAGIC **NOTE** This deployment path works with either of the runtimes used with this and the **04a** notebook.
 
 # COMMAND ----------
@@ -236,11 +236,11 @@ display(spark.table(config['scored_images_73_table']))
 # COMMAND ----------
 
 # MAGIC %md ## Step 2: Edge Device Deployment (Databricks 7.3 ML LTS)
-# MAGIC 
+# MAGIC
 # MAGIC Our Raspberry Pi 4 device, to which we wish to deploy our model, runs the [Raspbian Buster Lite (64-bit)](https://downloads.raspberrypi.org/raspios_lite_armhf_latest) operating system which includes support for Python 3.7. We have enabled [SSH](https://linuxize.com/post/how-to-enable-ssh-on-raspberry-pi/) and [WiFi](https://raspberrytips.com/raspberry-pi-wifi-setup/) so that we may access it over the network.
-# MAGIC 
+# MAGIC
 # MAGIC **NOTE** Different devices will have different paths to deployment.  We've chosen to work with our original Raspberry Pi device as it presents several common challenges associated with deployment to an ARM processor. We've also simplified the deployment path to highlight a lowest-common-denominator approach that may be more widely accessible across devices.  More sophisticated deployments using Docker and/or Flask may be more appropriate depending on individual circumstances.
-# MAGIC 
+# MAGIC
 # MAGIC With the OS installed and configured, our next action is to verify the OS is the 64-bit version and the ARM processor is recognized appropriately.  The bitness and processor architecture determine which versions of the PyTorch and TorchVision libraries we will need to download later:
 
 # COMMAND ----------
@@ -258,7 +258,7 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC   clear
 # MAGIC   echo "CPU architecture verified"
 # MAGIC fi
-# MAGIC 
+# MAGIC
 # MAGIC ```
 
 # COMMAND ----------
@@ -274,26 +274,26 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC yes | sudo apt-get upgrade
 # MAGIC yes | sudo apt-get install unzip
 # MAGIC yes | sudo apt-get install wget
-# MAGIC 
+# MAGIC
 # MAGIC yes | sudo apt-get install python3
 # MAGIC sudo update-alternatives --install /usr/bin/python python /usr/bin/python3 1
-# MAGIC 
+# MAGIC
 # MAGIC yes | sudo apt-get install python3-pip
 # MAGIC sudo update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
-# MAGIC 
+# MAGIC
 # MAGIC yes | sudo apt-get install ninja-build git cmake
-# MAGIC 
+# MAGIC
 # MAGIC yes | sudo apt-get install libopenmpi-dev libomp-dev ccache
 # MAGIC yes | sudo apt-get install libopenblas-dev libblas-dev libeigen3-dev libopenblas-base libatlas-base-dev
-# MAGIC 
+# MAGIC
 # MAGIC yes | sudo -H pip install -U --user wheel mock pillow
 # MAGIC yes | sudo -H pip install -U setuptools
 # MAGIC yes | sudo -H pip install -U mlflow
 # MAGIC yes | sudo -H pip install -U cloudpickle
-# MAGIC 
+# MAGIC
 # MAGIC yes | sudo -H pip install python3-picamera
 # MAGIC yes | sudo -H pip install "picamera[array]"
-# MAGIC 
+# MAGIC
 # MAGIC ```
 
 # COMMAND ----------
@@ -321,7 +321,7 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC if [[ ! -e $dir ]]; then
 # MAGIC     mkdir $dir
 # MAGIC fi
-# MAGIC 
+# MAGIC
 # MAGIC # download whl and checksum files
 # MAGIC TORCHFILE="torch-1.7.0a0-cp37-cp37m-linux_armv7l.whl"
 # MAGIC TORCHCHK="$TORCHFILE.sha256"
@@ -330,15 +330,15 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC fi 
 # MAGIC wget https://github.com/ljk53/pytorch-rpi/raw/master/$TORCHFILE -P $dir
 # MAGIC wget https://github.com/ljk53/pytorch-rpi/raw/master/$TORCHCHK -P $dir
-# MAGIC 
+# MAGIC
 # MAGIC # verify checksum
 # MAGIC cd $dir
 # MAGIC echo "$(cat $TORCHCHK)" | sha256sum --check
 # MAGIC cd ~
-# MAGIC 
+# MAGIC
 # MAGIC # install whl
 # MAGIC pip install "$dir/$TORCHFILE"
-# MAGIC 
+# MAGIC
 # MAGIC ```
 
 # COMMAND ----------
@@ -351,7 +351,7 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC if [[ ! -e $dir ]]; then
 # MAGIC     mkdir $dir
 # MAGIC fi
-# MAGIC 
+# MAGIC
 # MAGIC # download whl
 # MAGIC VISIONFILE="torchvision-0.4.0a0+d31eafa-cp37-cp37m-linux_armv7l.whl"
 # MAGIC VISIONFILEURL="https://github.com/nmilosev/pytorch-arm-builds/raw/master/torchvision-0.4.0a0%2Bd31eafa-cp37-cp37m-linux_armv7l.whl"
@@ -359,18 +359,18 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC     rm $dir/$VISIONFILE
 # MAGIC fi 
 # MAGIC wget $VISIONFILEURL -P $dir
-# MAGIC 
+# MAGIC
 # MAGIC # install whl
 # MAGIC yes | sudo apt-get install libjpeg-dev zlib1g-dev libpython3-dev
 # MAGIC yes | sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev
 # MAGIC pip install "$dir/$VISIONFILE"
-# MAGIC 
+# MAGIC
 # MAGIC ```
 
 # COMMAND ----------
 
 # MAGIC %md With our dependencies in place, we can now retrieve our model from our Databricks mlflow deployment.  To do this, we need to update some environment variables so that the local mlflow components understand how to connect to our remote workspace.
-# MAGIC 
+# MAGIC
 # MAGIC There are three variables we need to set: MLFLOW_TRACKING_URI, DATABRICKS_HOST & DATABRICKS_TOKEN.  The MFLOW_TRACKING_URI variable is set to *databricks* to indicate that we are connecting to a Databricks-integrated deployment of mlflow.  The DATABRICKS_HOST variable is set to the HTTPS address of our Databricks workspace.  And the DATABRICKS_TOKEN variable is set to the value of a [personal access token](https://docs.databricks.com/dev-tools/api/latest/authentication.html) with access to the environment.  You might wish to persist these values in the local */etc/environment* file so that they might be retained between device shutdowns but for demonstration purposes we'll perform a simple export:
 
 # COMMAND ----------
@@ -394,17 +394,17 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC ```
 # MAGIC # name of model 
 # MAGIC final_model_name="cv pytorch final"
-# MAGIC 
+# MAGIC
 # MAGIC # create clean directory
 # MAGIC dir="$(pwd)/models"
 # MAGIC if [ -d "$dir" ]; then
 # MAGIC     rm -r $dir
 # MAGIC fi
 # MAGIC mkdir $dir
-# MAGIC 
+# MAGIC
 # MAGIC # write model artifact retrieval script
 # MAGIC download_script="download_model_artifacts.py"
-# MAGIC 
+# MAGIC
 # MAGIC echo "import mlflow" > $download_script
 # MAGIC echo "client = mlflow.tracking.MlflowClient()" >> $download_script
 # MAGIC echo "" >> $download_script
@@ -416,7 +416,7 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC echo "   )[0]" >> $download_script
 # MAGIC echo "" >> $download_script
 # MAGIC echo "client.download_artifacts(last_run.info.run_id, 'model', \"$dir\")" >> $download_script
-# MAGIC 
+# MAGIC
 # MAGIC # execute script
 # MAGIC python $download_script
 # MAGIC ```
@@ -432,7 +432,7 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC ```
 # MAGIC # write image capture and scoring script
 # MAGIC scoring_script="image_capture_scoring.py"
-# MAGIC 
+# MAGIC
 # MAGIC echo "from picamera import PiCamera" > $scoring_script
 # MAGIC echo "import io, os" >> $scoring_script
 # MAGIC echo "import pandas as pd" >> $scoring_script
@@ -471,7 +471,7 @@ display(spark.table(config['scored_images_73_table']))
 # MAGIC echo "score = score.iloc[0,].values[0]" >> $scoring_script
 # MAGIC echo "" >> $scoring_script
 # MAGIC echo "print(score)" >> $scoring_script
-# MAGIC 
+# MAGIC
 # MAGIC # execute script
 # MAGIC python $scoring_script
 # MAGIC ```

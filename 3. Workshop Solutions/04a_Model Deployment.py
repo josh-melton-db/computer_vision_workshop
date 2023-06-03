@@ -9,11 +9,11 @@
 # COMMAND ----------
 
 # MAGIC %md ## Introduction
-# MAGIC 
+# MAGIC
 # MAGIC In notebook 04a and 04b, we explore three different deployment vehicles:</p>
-# MAGIC 
+# MAGIC
 # MAGIC <img src='https://brysmiwasb.blob.core.windows.net/demos/images/cv_deploy4.png' width=550>
-# MAGIC 
+# MAGIC
 # MAGIC Each deployment path is facilitated by mlflow, a model management technology integrated with the Databricks workspace.  For the ETL function and microservice deployment paths, it is recommended you use a recent version of Databricks runtimes.  
 
 # COMMAND ----------
@@ -48,15 +48,14 @@ import pandas as pd
 import base64
 import time
 
-
 # COMMAND ----------
 
 # MAGIC %md ## Step 1: Persist Model with Transformation Logic
-# MAGIC 
+# MAGIC
 # MAGIC Having successfully trained our model, we can persist it in preparation for deployment.  If you examine the last cell of the last step of the last notebook, you'll see we actually did this when we called the mlflow *log_model* method.  However, that version of the model doesn't include the logic required to transform a raw image into the format expected by our trained model.  So, we'll take a moment here to write a wrapper for our model which tackles all the data transformations originally captured in our transform spec.  To clarify, we could have (and *should* have) defined this wrapper in the last notebook and logged the model to the mlflow register at that time.  However, we elected to tackle this here as part of our focus on deployment.
-# MAGIC 
+# MAGIC
 # MAGIC The custom wrapper for our model defines logic for two key methods: *\_\_init\_\_* and *predict*.  The *\_\_init\_\_* method defines the logic employed as the model is initialized.  It's here that we will flip our model into its evaluation mode and define the logic for data transformation.  The *predict* method receives input data, applies the transformations and returns scored output.  
-# MAGIC 
+# MAGIC
 # MAGIC The Spark user-defined function associated with our ETL deployment pattern passes data to the *predict* function as a pandas dataframe. To keep things simple, we'll package our image data in a similar manner before passing it to the model for scoring.  However, we could have included logic in our predict function to inspect the incoming data and respond to different data structures and formats:
 
 # COMMAND ----------
@@ -123,7 +122,7 @@ last_run = client.search_runs(
   )
 
 # retrieve model from this last run
-if last_run is not None: 
+if last_run is not None:
   model = mlflow.pytorch.load_model('runs:/{0}/model'.format(last_run[0].info.run_id))
 else:
   raise Exception('The run named "{0}" was not found.  Please make sure you have run the prior notebooks in this series.'.format(config['tuned_model_name']))
@@ -149,7 +148,7 @@ print('Save to Registry?: {0}'.format(save_to_registry))
 # COMMAND ----------
 
 # MAGIC %md For the model registry, we can more easily discover our preferred version of a persisted model but this requires us to do a bit more model management.
-# MAGIC 
+# MAGIC
 # MAGIC First, we'll make sure we have no other *production* instances of this model in the registry:
 
 # COMMAND ----------
@@ -220,9 +219,9 @@ if save_to_registry:
 # COMMAND ----------
 
 # MAGIC %md ## Step 2: ETL Deployment
-# MAGIC 
+# MAGIC
 # MAGIC Registered models may be deployed in a number of ways.  If our goal is to score images as they are received, we might retrieve our model to a Spark user-defined function:
-# MAGIC 
+# MAGIC
 # MAGIC **NOTE** This deployment path works with either of the runtimes used with this notebook.
 
 # COMMAND ----------
@@ -258,7 +257,7 @@ max_bytes_per_executor = 512 * 1024**2 # 512-MB limit
   .option('cloudFiles.includeExistingFiles', 'true') 
   .option('pathGlobFilter', '*.jpg') 
   .option('cloudFiles.maxBytesPerTrigger', sc.defaultParallelism * max_bytes_per_executor) 
-  .load(config['incoming_image_file_path']) # location to read from
+  .load('dbfs:/tmp/cv_foundations/tmp/incoming_image_file_path') # location to read from
   .withColumn('score', cv_func(f.struct(f.col('content'))))  # score images
   .select('path','score')
   .writeStream
@@ -275,13 +274,13 @@ display(spark.table(config['scored_images_table']))
 # COMMAND ----------
 
 # MAGIC %md ## Step 3: Databricks Model Serving Deployment
-# MAGIC 
+# MAGIC
 # MAGIC If our needs required us to deploy a centralized service that any number of applications could call on-demand, we might consider a different deployment path for our model.  Instead of deploying the model to a function, we might deploy it to a Docker image and expose it through a REST API.  Integration between mlflow and [Azure ML](https://www.mlflow.org/docs/latest/python_api/mlflow.azureml.html) and [AWS Sagemaker](https://www.mlflow.org/docs/latest/python_api/mlflow.sagemaker.html) make this a relatively simple process.  We might also take advantage of Databricks's [model serving](https://docs.databricks.com/applications/mlflow/model-serving.html?_ga=2.81483735.1331949122.1632064157-31266672.1629894740) capabilities.
-# MAGIC 
+# MAGIC
 # MAGIC To leverage Databricks model serving, we will need to make use of our workspace's user-interface.  To do this, switch into the Databricks UI's **Machine Learning UI** by clicking the drop-down in the left-hand panel of the Databricks UI. Once in the Machine Learning UI, click the **Models** icon in the left-hand side of the screen.
-# MAGIC 
+# MAGIC
 # MAGIC In the resulting page, locate the model registered above. Click on the model and note that two tabs are available: Details & Serving. Clicking the **Serving** tab, we can select the **Enable Serving** button to launch a small, single-node cluster to host the model behind an autogenerated REST API. Wait for the production version of the model to appear in the Model Versions table with a status of *Ready*.  (Once you are done with the REST API, please be sure to return to this interface to stop the hosting cluster.)
-# MAGIC 
+# MAGIC
 # MAGIC Once the model is in a Ready state, copy the model URL that identifies the production version of your model and update the cell below with that string:
 
 # COMMAND ----------
@@ -358,7 +357,7 @@ if save_to_registry:
 
   # send data to REST API for scoring
   headers = {'Authorization': 'Bearer {0}'.format(personal_access_token)}
-  # response = requests.request(method='POST', headers=headers, url=model_url, json=data_json) # request is expected to work only after model serving is enabled
+  response = requests.request(method='POST', headers=headers, url=model_url, json=data_json) # request is expected to work only after model serving is enabled
   
   # if response.status_code != 200:
   #   raise Exception(f'Request failed with status {response.status_code}, {response.text}')

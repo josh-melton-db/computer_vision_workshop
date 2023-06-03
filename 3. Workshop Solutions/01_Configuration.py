@@ -9,7 +9,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,Initialize Configuration Variable
-if 'config' not in locals():
+if 'config' not in locals(): 
   config = {}
 
 # COMMAND ----------
@@ -20,24 +20,24 @@ user = 'jlm'
 # COMMAND ----------
 
 # DBTITLE 1,Storage Settings
-config['incoming_image_file_path'] = config['mount_point'] + '/FileStore/computer_vision_workshop_' + user
 config['mount_point'] = '/tmp/cv_foundations/' # location for data files; use a mount path like /mnt/images/ if reading from external storage
+config['incoming_image_file_path'] = config['mount_point'] + '/FileStore/computer_vision_workshop_' + user
 config['database_root'] = '/tmp/cv_foundations/cv/'
-config['raw_image_file_path'] = "s3://db-gtm-industry-solutions/data/rcg/cv/images/"  # where incoming image files land - this is a publicly accessible S3 bucket
+config['raw_image_file_path'] = 'dbfs:/tmp/cv_foundations/tmp/incoming_image_file_path' # "s3://db-gtm-industry-solutions/data/rcg/cv/images/"  # where incoming image files land - this is a publicly accessible S3 bucket
 config['checkpoint_path'] = config['mount_point'] + 'tmp/image_processing_chkpnt/' # folder where incoming image processing checkpoint resides
 config['checkpoint_path_inference'] = config['mount_point'] + 'tmp/image_inference_chkpnt/'
 config['checkpoint_path_inference_73'] = config['mount_point'] + 'tmp/image_inference_chkpnt_73/'
 config['petastorm_path'] = 'file:///dbfs/tmp/petastorm/cache' # location where to store petastorm cache files
-config['input_images_table'] = 'cv.images'
-config['scored_images_73_table'] = "cv.scored_images_73"
-config['scored_images_table'] = "cv.scored_images"
+config['input_images_table'] = 'cv.images_' + user
+config['scored_images_73_table'] = "cv.scored_images_73_" + user
+config['scored_images_table'] = "cv.scored_images_" + user
 
 # COMMAND ----------
 
 # DBTITLE 1,Model Settings
-config['tuning_model_name'] = 'cv pytorch tuning'
-config['tuned_model_name'] = 'cv pytorch tuned'
-config['tuned_model_name_73'] = 'cv pytorch tuned 73'
+config['tuning_model_name'] = 'cv pytorch tuning ' + user
+config['tuned_model_name'] = 'cv pytorch tuned '  + user
+config['tuned_model_name_73'] = 'cv pytorch tuned 73 '  + user
 config['final_model_name'] = 'cv pytorch final ' + user
 
 # COMMAND ----------

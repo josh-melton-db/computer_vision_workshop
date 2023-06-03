@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md 
-# MAGIC You may find this series of notebooks at https://github.com/databricks-industry-solutions/computer-vision-foundations. For more information about this solution accelerator, visit https://www.databricks.com/blog/2021/12/17/enabling-computer-vision-applications-with-the-data-lakehouse.html.
+# MAGIC For more information about this solution accelerator this lab is based on, visit https://www.databricks.com/blog/2021/12/17/enabling-computer-vision-applications-with-the-data-lakehouse.html
 
 # COMMAND ----------
 
@@ -39,12 +39,6 @@ from PIL import Image, ImageStat, ExifTags
 # MAGIC **NOTE** You can recreate the work below by downloading these files from [this GitHub repository](https://github.com/bryansmith-db/package_images) and then placing them in a cloud storage environment as described above. We have automated this step for you and placed the data in a temp folder */tmp/images/*
 # MAGIC
 # MAGIC As the images land in the storage account, the Databricks cluster uses the [Databricks Auto Loader](https://docs.databricks.com/spark/latest/structured-streaming/auto-loader.html) functionality (aka *cloudFiles*) to recognize their arrival and immediately process them:
-
-# COMMAND ----------
-
-config['raw_image_file_path']
-# /dbfs/tmp/cv_foundations/tmp/incoming_image_file_path
-# dbfs:/tmp/cv_foundations/tmp/incoming_image_file_path
 
 # COMMAND ----------
 
@@ -176,7 +170,6 @@ def get_image_metadata_udf(image_binary):
   metadata['exif'] = _cleanse_exif(image._getexif())
 
   return metadata
-  #return {'test': str(metadata)}
 
 # COMMAND ----------
 
@@ -191,8 +184,6 @@ metadata_schema =  StructType([
   StructField('format', StringType()),
   StructField('exif', exif_schema)
   ])
-
-#metadata_schema = StructType([StructField('test', StringType())])
 
 # register function for use with sql
 _ = spark.udf.register('get_image_metadata', get_image_metadata_udf, metadata_schema)

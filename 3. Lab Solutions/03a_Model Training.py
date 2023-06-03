@@ -1,23 +1,6 @@
 # Databricks notebook source
 # MAGIC %md 
-# MAGIC You may find this series of notebooks at https://github.com/databricks-industry-solutions/computer-vision-foundations. For more information about this solution accelerator, visit https://www.databricks.com/blog/2021/12/17/enabling-computer-vision-applications-with-the-data-lakehouse.html.
-
-# COMMAND ----------
-
-# MAGIC %md The purpose of this notebook is to demonstrate patterns supporting computer vision model training.  
-# MAGIC
-# MAGIC * If you intend to deploy the model as a microservice or as part of a Spark pipeline using user-defined functions, use this **03a** notebook , which uses one of the latest versions of Databricks runtime.  
-# MAGIC * If you intend to deploy the model to an edge device, you should use the next notebook **03b** to train the model on a cluster where the Python version used by the cluster is aligned with the version deployed on your device.  (Our Raspberry Pi device runs Python 3.7, and for that reason, we have trained our edge-deployed models on the Databricks 7.3 ML cluster which runs that same version of Python.) 
-
-# COMMAND ----------
-
-# DBTITLE 1,Verify Python Version
-import sys
-
-print('You are running a Databricks {0} cluster leveraging Python {1}'.format( 
-  spark.conf.get("spark.databricks.clusterUsageTags.sparkVersion"),
-  sys.version.split(' ')[0])
-  )
+# MAGIC For more information about this solution accelerator this lab is based on, visit https://www.databricks.com/blog/2021/12/17/enabling-computer-vision-applications-with-the-data-lakehouse.html
 
 # COMMAND ----------
 
@@ -203,7 +186,7 @@ with converter_train.make_torch_dataloader(
 # MAGIC
 # MAGIC To keep things simple, we'll leverage  the [MobileNetV2 model](https://pytorch.org/hub/pytorch_vision_mobilenet_v2/#model-description) available through TorchVision which has been pre-trained on the [ImageNet dataset](https://www.image-net.org/about.php). Our model will attempt to differentiate between two image classes, *i.e.* those that contain an object of interest and those that do not.  It will read images 32 at a time.  It will take 5 passes over the entire training dataset:
 # MAGIC
-# MAGIC **NOTE** We are borrowing heavily from [this notebook](https://docs.databricks.com/_static/notebooks/deep-learning/petastorm-spark-converter-pytorch.html) and have attempted to preserve the codes structure to provide an easier cross-reference whenever possible. In addition, we are not diving into the topics of image classification or the use of pre-trained models for computer vision scenarios so that we may remain focused on model training mechanics.  These other topics are ones we'll tackle in future notebooks.
+# MAGIC **NOTE** We are borrowing heavily from [this notebook](https://docs.databricks.com/_static/notebooks/deep-learning/petastorm-spark-converter-pytorch.html) and have attempted to preserve the codes structure to provide an easier cross-reference whenever possible. In addition, we are not diving into the topics of image classification or the use of pre-trained models for computer vision scenarios so that we may remain focused on model training mechanics.  These other topics are ones we'll tackle in future efforts.
 
 # COMMAND ----------
 

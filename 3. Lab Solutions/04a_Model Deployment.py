@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md 
-# MAGIC You may find this series of notebooks at https://github.com/databricks-industry-solutions/computer-vision-foundations. For more information about this solution accelerator, visit https://www.databricks.com/blog/2021/12/17/enabling-computer-vision-applications-with-the-data-lakehouse.html.
+# MAGIC For more information about this solution accelerator this lab is based on, visit https://www.databricks.com/blog/2021/12/17/enabling-computer-vision-applications-with-the-data-lakehouse.html
 
 # COMMAND ----------
 
@@ -119,7 +119,7 @@ last_run = client.search_runs(
   filter_string="tags.`mlflow.runName`='{0}'".format(config['tuned_model_name']), 
   order_by=['start_time DESC'],
   max_results=1
-  )
+)
 
 # retrieve model from this last run
 if last_run is not None:
@@ -133,20 +133,6 @@ else:
 
 # COMMAND ----------
 
-# DBTITLE 1,Determine Whether to Save to Registry
-# identify numerical version of databricks runtime
-dbx_version = spark.conf.get("spark.databricks.clusterUsageTags.sparkVersion").split("-")[0].split(".")
-
-# save to registry if runtime is 8 or higher
-if int(dbx_version[0]) < 8:
-  save_to_registry = False
-else:
-  save_to_registry = True
-  
-print('Save to Registry?: {0}'.format(save_to_registry))
-
-# COMMAND ----------
-
 # MAGIC %md For the model registry, we can more easily discover our preferred version of a persisted model but this requires us to do a bit more model management.
 # MAGIC
 # MAGIC First, we'll make sure we have no other *production* instances of this model in the registry:
@@ -154,16 +140,14 @@ print('Save to Registry?: {0}'.format(save_to_registry))
 # COMMAND ----------
 
 # DBTITLE 1,Archive Any Prior Model Registrations
-if save_to_registry:
-
-  try:
+try:
     for m in client.get_latest_versions(config['final_model_name'], stages=['Production']):
-      client.transition_model_version_stage(
+        client.transition_model_version_stage(
         name=m.name,
         version=m.version,
         stage='Archived'
         )
-  except:
+except:
     pass
 
 # COMMAND ----------
@@ -173,26 +157,25 @@ if save_to_registry:
 # COMMAND ----------
 
 # DBTITLE 1,Persist Model to Registry
-if save_to_registry:
-  # define model dependencies
-  env = mlflow.pytorch.get_default_conda_env()
-  env['dependencies'][-1]['pip'] += [
-      f'torchvision=={torchvision.__version__.split("+")[0]}',
-      f'pillow=={PIL.__version__}'
-    ]
+# define model dependencies
+env = mlflow.pytorch.get_default_conda_env()
+env['dependencies'][-1]['pip'] += [
+    f'torchvision=={torchvision.__version__.split("+")[0]}',
+    f'pillow=={PIL.__version__}'
+]
 
-  # wrap model
-  wrapped_model = CVModelWrapper(model)
+# wrap model
+wrapped_model = CVModelWrapper(model)
 
-  # persist model to registry
-  with mlflow.start_run(run_name=config['final_model_name']) as run:
+# persist model to registry
+with mlflow.start_run(run_name=config['final_model_name']) as run:
 
-    mlflow.pyfunc.log_model(
-      artifact_path='model',
-      python_model=wrapped_model,
-      registered_model_name=config['final_model_name'],
-      conda_env=env
-      )
+mlflow.pyfunc.log_model(
+    artifact_path='model',
+    python_model=wrapped_model,
+    registered_model_name=config['final_model_name'],
+    conda_env=env
+    )
 
 # COMMAND ----------
 
@@ -201,16 +184,14 @@ if save_to_registry:
 # COMMAND ----------
 
 # DBTITLE 1,Promote Model to Production
-if save_to_registry:
-  
-  for m in client.get_latest_versions(config['final_model_name'], stages=['None']):
+for m in client.get_latest_versions(config['final_model_name'], stages=['None']):
     client.transition_model_version_stage(
-      name=m.name,
-      version=m.version,
-      stage='Production'
-      )
-    
-    model_name = 'models:/{0}/Production'.format(config['final_model_name'])
+        name=m.name,
+        version=m.version,
+        stage='Production'
+        )
+
+model_name = 'models:/{0}/Production'.format(config['final_model_name'])
 
 # COMMAND ----------
 
@@ -353,17 +334,15 @@ data_json = {"dataframe_records": data}
 # COMMAND ----------
 
 # DBTITLE 1,Call REST API to Score Images
-import time
-if save_to_registry:
-  # send data to REST API for scoring
-  headers = {'Authorization': 'Bearer {0}'.format(personal_access_token)}
-  response = requests.request(method='POST', headers=headers, url=model_url, json=data_json) # request is expected to work only after model serving is enabled
-  
-  if response.status_code != 200:
+# send data to REST API for scoring
+headers = {'Authorization': 'Bearer {0}'.format(personal_access_token)}
+response = requests.request(method='POST', headers=headers, url=model_url, json=data_json) # request is expected to work only after model serving is enabled
+
+if response.status_code != 200:
     raise Exception(f'Request failed with status {response.status_code}, {response.text}')
 
-  # display returned scores
-  print(response.json())
+# display returned scores
+print(response.json())
 
 # COMMAND ----------
 

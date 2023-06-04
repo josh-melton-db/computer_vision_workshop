@@ -103,7 +103,7 @@ def build_compile_model(normalize_layer, cfg):
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC #### Approach 2: Downstream Vectorization
+# MAGIC #### Approach: Downstream Vectorization
 # MAGIC
 # MAGIC Here, we use the approach of passing the conversion of feature vector to 1D arrays to Petastorm
 

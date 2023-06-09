@@ -98,7 +98,7 @@ def build_compile_model(normalize_layer, cfg):
 # MAGIC
 # MAGIC Both approaches require us to use Petastorm TransformSpec function, which we will show later.
 # MAGIC
-# MAGIC We'll focus on Downstream Vectorization for today's example
+# MAGIC We'll focus on Downstream Vectorization for today's example, although in production you may want to consider upstream vectorization with Spark for optimal performance
 
 # COMMAND ----------
 
